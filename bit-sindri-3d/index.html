@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIT Sindri 3D</title>
+  <style>
+    html, body, #app { height: 100%; margin: 0; overflow: hidden; background: #0b0d10; }
+    .overlay { position: fixed; top: 10px; left: 10px; color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell; font-size: 14px; opacity: .9; user-select: none; }
+    .overlay kbd { background: rgba(255,255,255,.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,.15); }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="overlay">
+      <span><kbd>WASD</kbd>/<kbd>←↑→↓</kbd> move • <kbd>Q</kbd>/<kbd>E</kbd> down/up • Hold <kbd>Right Mouse</kbd> + drag to look</span>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
