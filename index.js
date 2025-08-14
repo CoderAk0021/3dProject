@@ -1002,16 +1002,46 @@ buttons.forEach((btn) => {
   button.style.color = "#fff";
   button.style.border = "none";
   button.style.cursor = "pointer";
-  button.addEventListener("touchstart", (e) => {
+  button.addEventListener("pointerover", (e) => {
     e.preventDefault();
     btn.action();
   });
-  button.addEventListener("touchend", (e) => {
+  button.addEventListener("pointerleave", (e) => {
     e.preventDefault();
     if (btn.id === "brake") keys["Brake"] = false; // release brake on touch end
+    switch(btn.id) {
+      case "brake" :
+        keys["Brake"] = false;
+        break;
+      case "right" :
+        keys["ArrowRight"] = false;
+        break;
+        case "left" :
+        keys["ArrowLeft"] = false;
+        break;
+      case "reverse" :
+        keys["ArrowDown"] = false;
+        break;
+      case "forward":
+        keys["ArrowUp"] = false;
+        break;
+      
+    }
   });
   mobileControls.appendChild(button);
 });
+
+// make the mobile controls invisible for the desktop
+ if (
++   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
++     navigator.userAgent
+   )
+ ) {
+   mobileControls.style.display = "flex";
+ } else {
+   mobileControls.style.display = "none";
+ }
+
 document.body.appendChild(mobileControls);
 
 // ---------------- Animation loop ----------------
