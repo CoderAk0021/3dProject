@@ -843,7 +843,7 @@ audioLoader.load("/sounds/brake.mp3", (buf) => {
 });
 let isBraking = false;
 
-// ---------------- Raycasting: click/hover for billboards ----------------
+// ---------------- Raycasting: click/hover for billboards (Desktop + Mobile) ----------------
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let hoveredPoster = null;
@@ -852,18 +852,34 @@ function setCursorPointer(on) {
   renderer.domElement.style.cursor = on ? "pointer" : "";
 }
 
-function onPointerMove(event) {
+function updateRaycasterFromEvent(event) {
   const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  let clientX, clientY;
 
+  if (event.touches && event.touches.length > 0) {
+    // Touch input
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else {
+    // Mouse / Pointer input
+    clientX = event.clientX;
+    clientY = event.clientY;
+  }
+
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+function onPointerMove(event) {
+  updateRaycasterFromEvent(event);
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObjects(pickables, false);
   const newHover = hits.length ? hits[0].object : null;
 
   if (hoveredPoster && hoveredPoster !== newHover) {
-    if (hoveredPoster.userData?.label)
+    if (hoveredPoster.userData?.label) {
       hoveredPoster.userData.label.visible = false;
+    }
   }
   hoveredPoster = newHover;
   if (hoveredPoster && hoveredPoster.userData?.label) {
@@ -872,26 +888,38 @@ function onPointerMove(event) {
   setCursorPointer(!!hoveredPoster);
 }
 
-function onClick() {
-  if (!hoveredPoster) return;
-  const href = hoveredPoster.userData?.href;
-  if (href) window.open(href, "_blank");
+function onPointerSelect(event) {
+  updateRaycasterFromEvent(event);
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(pickables, false);
+  if (hits.length > 0) {
+    const href = hits[0].object.userData?.href;
+    if (href) window.open(href, "_blank");
+  }
 }
 
 renderer.domElement.addEventListener("pointermove", onPointerMove);
 renderer.domElement.addEventListener("pointerleave", () => {
-  if (hoveredPoster && hoveredPoster.userData?.label)
+  if (hoveredPoster && hoveredPoster.userData?.label) {
     hoveredPoster.userData.label.visible = false;
+  }
   hoveredPoster = null;
   setCursorPointer(false);
 });
 
-renderer.domElement.addEventListener("click", onClick);
+// Works for both desktop click and mobile tap
+renderer.domElement.addEventListener("click", onPointerSelect);
+renderer.domElement.addEventListener("pointerup", onPointerSelect); 
+
+// Set renderer output color
 if ("outputColorSpace" in renderer) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 } else {
   renderer.outputEncoding = THREE.sRGBEncoding;
 }
+
+
+
 
 // ---------------- Place & orient vehicle on road ----------------
 function placeVehicleOnRoad(curve) {
@@ -946,98 +974,102 @@ function placeVehicleOnRoad(curve) {
 placeVehicleOnRoad(roadCurve);
 
 //vehicle controls for mobile
+// Create container for all mobile controls
 const mobileControls = document.createElement("div");
 mobileControls.style.position = "fixed";
 mobileControls.style.bottom = "20px";
-mobileControls.style.left = "50%";
-mobileControls.style.transform = "translateX(-50%)";
-mobileControls.style.display = "flex";
-mobileControls.style.gap = "10px";
-mobileControls.style.zIndex = "1000";
-const buttons = [
-  {
-    id: "forward",
-    text: "↑",
-    action: () => {
-      keys["ArrowUp"] = true;
-    },
-  },
-  {
-    id: "reverse",
-    text: "↓",
-    action: () => {
-      keys["ArrowDown"] = true;
-    },
-  },
-  {
-    id: "left",
-    text: "←",
-    action: () => {
-      keys["ArrowLeft"] = true;
-    },
-  },
-  {
-    id: "right",
-    text: "→",
-    action: () => {
-      keys["ArrowRight"] = true;
-    },
-  },
-  {
-    id: "brake",
-    text: "Space",
-    action: () => {
-      keys["Brake"] = true;
-    },
-  },
-];
-buttons.forEach((btn) => {
+mobileControls.style.width = "100%";
+mobileControls.style.height = "200px"; // adjust as needed
+mobileControls.style.pointerEvents = "none"; // allow individual buttons to receive events
+document.body.appendChild(mobileControls);
+
+// ----- Left side controls (ArrowLeft, ArrowRight, Brake) -----
+const leftControls = document.createElement("div");
+leftControls.style.position = "absolute";
+leftControls.style.left = "20px";
+leftControls.style.bottom = "20px";
+leftControls.style.display = "flex";
+leftControls.style.flexDirection = "column";
+leftControls.style.alignItems = "center";
+leftControls.style.gap = "20px";
+leftControls.style.pointerEvents = "auto"; // enable touch
+mobileControls.appendChild(leftControls);
+
+// Row for left and right arrows
+const lrRow = document.createElement("div");
+lrRow.style.display = "flex";
+lrRow.style.gap = "20px";
+leftControls.appendChild(lrRow);
+
+const leftBtn = createButton("left", "←", "ArrowLeft");
+const rightBtn = createButton("right", "→", "ArrowRight");
+lrRow.appendChild(leftBtn);
+lrRow.appendChild(rightBtn);
+
+// Brake button below arrows
+const brakeBtn = createButton("brake", "Space", "Brake");
+leftControls.appendChild(brakeBtn);
+
+// ----- Right side controls (ArrowUp, ArrowDown) -----
+const rightControls = document.createElement("div");
+rightControls.style.position = "absolute";
+rightControls.style.right = "20px";
+rightControls.style.bottom = "20px";
+rightControls.style.display = "flex";
+rightControls.style.flexDirection = "column";
+rightControls.style.gap = "20px";
+rightControls.style.pointerEvents = "auto";
+mobileControls.appendChild(rightControls);
+
+const forwardBtn = createButton("forward", "↑", "ArrowUp");
+const reverseBtn = createButton("reverse", "↓", "ArrowDown");
+rightControls.appendChild(forwardBtn);
+rightControls.appendChild(reverseBtn);
+
+// ----- Button creation function -----
+function createButton(id, text, key) {
   const button = document.createElement("button");
-  button.id = btn.id;
-  button.textContent = btn.text;
-  button.style.padding = "10px 15px";
-  button.style.fontSize = "16px";
-  button.style.borderRadius = "8px";
+  button.id = id;
+  button.textContent = text;
+  button.style.padding = "15px 20px";
+  button.style.fontSize = "36px";
+  button.style.borderRadius = "12px";
   button.style.background = "rgba(0,0,0,0.5)";
   button.style.color = "#fff";
   button.style.border = "none";
   button.style.cursor = "pointer";
-  button.addEventListener("pointerover", (e) => {
+  button.style.userSelect = "none";
+
+  // Press action
+  button.addEventListener("pointerdown", (e) => {
     e.preventDefault();
-    btn.action();
+    keys[key] = true;
   });
+
+  // Release action
+  button.addEventListener("pointerup", (e) => {
+    e.preventDefault();
+    keys[key] = false;
+  });
+
+  // Release if finger slides away
   button.addEventListener("pointerleave", (e) => {
     e.preventDefault();
-    if (btn.id === "brake") keys["Brake"] = false; // release brake on touch end
-    switch (btn.id) {
-      case "brake":
-        keys["Brake"] = false;
-        break;
-      case "right":
-        keys["ArrowRight"] = false;
-        break;
-      case "left":
-        keys["ArrowLeft"] = false;
-        break;
-      case "reverse":
-        keys["ArrowDown"] = false;
-        break;
-      case "forward":
-        keys["ArrowUp"] = false;
-        break;
-    }
+    keys[key] = false;
   });
-  mobileControls.appendChild(button);
-});
 
-// make the mobile controls invisible for the desktop
+  return button;
+}
+
+// ----- Show only on mobile -----
 if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-  mobileControls.style.display = "flex";
+  mobileControls.style.display = "block";
 } else {
   mobileControls.style.display = "none";
 }
 
-document.body.appendChild(mobileControls);
+
+
 
 // ---------------- Animation loop ----------------
 function animate() {
