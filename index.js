@@ -8,7 +8,7 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 
 /*
   HOW TO USE
-  - Put your billboard images in /src/assets/billboards (or adjust paths below).
+  - Put your billboard images in //images/billboards (or adjust paths below).
   - Edit BILLBOARD_DATA: each item has { img, href, desc }.
   - Hover a billboard to see its description; click to open its link in a new tab.
 */
@@ -35,7 +35,7 @@ document.body.appendChild(labelRenderer.domElement);
 // --------------- Environment & lights ----------------
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
-new RGBELoader().setPath("src/assets/").load("env.hdr", (hdr) => {
+new RGBELoader().setPath("/textures/").load("env.hdr", (hdr) => {
   const envMap = pmremGenerator.fromEquirectangular(hdr).texture;
   scene.environment = envMap;
   scene.background = envMap;
@@ -89,11 +89,11 @@ asphalt.repeat.set(6, 32);
 asphalt.anisotropy = 16;
 
 // wheel textures (your existing)
-const wheelColor = texLoader.load("src/wheel/wheel_color.jpg");
+const wheelColor = texLoader.load("/textures/wheel_color.jpg");
 wheelColor.rotation = Math.PI / 2; wheelColor.center.set(0.5, 0.5);
-const wheelNormal = texLoader.load("src/wheel/wheel_normal.jpg");
+const wheelNormal = texLoader.load("/textures/wheel_normal.jpg");
 wheelNormal.rotation = Math.PI / 2; wheelNormal.center.set(0.5, 0.5);
-const wheelRough = texLoader.load("src/wheel/wheel_roughness.jpg");
+const wheelRough = texLoader.load("/textures/wheel_roughness.jpg");
 wheelRough.rotation = Math.PI / 2; wheelRough.center.set(0.5, 0.5);
 
 // ---------------- Road (wider oval) ----------------
@@ -293,12 +293,12 @@ placeRocks(roadCurve, 18);
 
 // ---------------- Billboard data (edit these!) ----------------
 const BILLBOARD_DATA = [
-  { img: "src/assets/billboard_0.jpg", href: "https://example.com/one",   desc: "Academic Building" },
-  { img: "src/assets/anime-school-building-illustration.jpg", href: "https://example.com/two",   desc: "Canteen" },
-  { img: "src/assets/billboard_0.jpg", href: "https://example.com/three", desc: "Nescafe" },
-  { img: "src/assets/billboard_0.jpg", href: "https://example.com/four",  desc: "Deshpande Auditorium" },
-  { img: "src/assets/billboard_0.jpg", href: "https://example.com/five",  desc: "Central Library" },
-  { img: "src/assets/billboard_0.jpg", href: "https://example.com/six",   desc: "College Ground" },
+  { img: "/images/billboard_0.jpg", href: "https://example.com/one",   desc: "Academic Building" },
+  { img: "/images/anime-school-building-illustration.jpg", href: "https://example.com/two",   desc: "Canteen" },
+  { img: "/images/billboard_0.jpg", href: "https://example.com/three", desc: "Nescafe" },
+  { img: "/images/billboard_0.jpg", href: "https://example.com/four",  desc: "Deshpande Auditorium" },
+  { img: "/images/billboard_0.jpg", href: "https://example.com/five",  desc: "Central Library" },
+  { img: "/images/billboard_0.jpg", href: "https://example.com/six",   desc: "College Ground" },
 ];
 
 // ---------------- Billboards (replace buildings) ----------------
@@ -488,7 +488,7 @@ world.addContactMaterial(contactMaterial);
 
 let chassisMesh = null;
 gltfLoader.load(
-  "src/assets/cybertruck.glb",
+  "/models/cybertruck.glb",
   (gltf) => {
     chassisMesh = gltf.scene;
     chassisMesh.traverse((c) => {
@@ -582,10 +582,10 @@ camera.add(listener);
 const engineSound = new THREE.Audio(listener);
 const brakeSound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
-audioLoader.load("src/sounds/engine.mp3", (buf) => {
+audioLoader.load("/sounds/engine.mp3", (buf) => {
   engineSound.setBuffer(buf); engineSound.setLoop(true); engineSound.setVolume(0.5);
 });
-audioLoader.load("src/sounds/brake.mp3", (buf) => {
+audioLoader.load("/sounds/brake.mp3", (buf) => {
   brakeSound.setBuffer(buf); brakeSound.setLoop(false); brakeSound.setVolume(0.8);
 });
 let isBraking = false;
