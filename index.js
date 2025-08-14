@@ -486,12 +486,12 @@ function createBillboard(position, lookAtPoint, options) {
   const post1 = new THREE.Mesh(postGeo, postMat);
   post1.castShadow = true;
   post1.receiveShadow = true;
-  post1.position.set(-width/2, postHeight / 2, 0);
+  post1.position.set(-width / 2, postHeight / 2, 0);
 
   const post2 = new THREE.Mesh(postGeo, postMat);
   post2.castShadow = true;
   post2.receiveShadow = true;
-  post2.position.set(width/2, postHeight / 2, 0);
+  post2.position.set(width / 2, postHeight / 2, 0);
   group.add(post1);
   group.add(post2);
 
@@ -656,8 +656,8 @@ function placeBillboardsFromData(curve, data) {
     createBillboard(pos, center, {
       imageURL: item.img,
       description: item.desc,
-      width: w+8,
-      height: h+3,
+      width: w + 8,
+      height: h + 3,
       postHeight: 3.2 + Math.random() * 0.6,
       link: item.href,
     });
@@ -754,8 +754,8 @@ const wheelMeshes = vehicle.wheelInfos.map(() => {
 // ---------------- Controls & camera ----------------
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = true;
-controls.zoomSpeed=1
-controls.minDistance = 5;  
+controls.zoomSpeed = 1;
+controls.minDistance = 5;
 controls.maxDistance = 50;
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
@@ -765,38 +765,38 @@ controls.minDistance = 5;
 controls.maxDistance = 35;
 controls.minPolarAngle = Math.PI / 7;
 controls.maxPolarAngle = Math.PI / 2.1;
-controls.enableRotate = true
+controls.enableRotate = true;
 camera.position.set(0, 8, 20);
 controls.target.copy(chassisBody.position);
 
 let userIsRotating = false;
 
 // Event listeners for when the user starts and stops rotating
-controls.addEventListener('start', () => {
-    userIsRotating = true;
+controls.addEventListener("start", () => {
+  userIsRotating = true;
 });
 
-controls.addEventListener('end', () => {
-    userIsRotating = false;
+controls.addEventListener("end", () => {
+  userIsRotating = false;
 });
 
 // A new, separate function for the camera to follow the car
 function followCamera() {
-    // Only update the camera's position to follow the car
-    // if the user is NOT actively rotating it.
-    if (!userIsRotating) {
-        const offset = new THREE.Vector3(2, 3, -8)
-            .applyQuaternion(chassisBody.quaternion)
-            .add(chassisBody.position);
-        
-        camera.position.lerp(offset, 0.1);
-        controls.target.copy(chassisBody.position);
-    }
+  // Only update the camera's position to follow the car
+  // if the user is NOT actively rotating it.
+  if (!userIsRotating) {
+    const offset = new THREE.Vector3(2, 3, -8)
+      .applyQuaternion(chassisBody.quaternion)
+      .add(chassisBody.position);
 
-    // Always update controls, even when the user is rotating,
-    // so that damping and other behaviors work correctly.
-    controls.target.copy(chassisBody.position)
-    controls.update();
+    camera.position.lerp(offset, 0.1);
+    controls.target.copy(chassisBody.position);
+  }
+
+  // Always update controls, even when the user is rotating,
+  // so that damping and other behaviors work correctly.
+  controls.target.copy(chassisBody.position);
+  controls.update();
 }
 
 // ---------------- Input & audio ----------------
@@ -1009,38 +1009,33 @@ buttons.forEach((btn) => {
   button.addEventListener("pointerleave", (e) => {
     e.preventDefault();
     if (btn.id === "brake") keys["Brake"] = false; // release brake on touch end
-    switch(btn.id) {
-      case "brake" :
+    switch (btn.id) {
+      case "brake":
         keys["Brake"] = false;
         break;
-      case "right" :
+      case "right":
         keys["ArrowRight"] = false;
         break;
-        case "left" :
+      case "left":
         keys["ArrowLeft"] = false;
         break;
-      case "reverse" :
+      case "reverse":
         keys["ArrowDown"] = false;
         break;
       case "forward":
         keys["ArrowUp"] = false;
         break;
-      
     }
   });
   mobileControls.appendChild(button);
 });
 
 // make the mobile controls invisible for the desktop
- if (
-+   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-+     navigator.userAgent
-   )
- ) {
-   mobileControls.style.display = "flex";
- } else {
-   mobileControls.style.display = "none";
- }
+if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+  mobileControls.style.display = "flex";
+} else {
+  mobileControls.style.display = "none";
+}
 
 document.body.appendChild(mobileControls);
 
