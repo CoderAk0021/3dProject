@@ -18,13 +18,10 @@ import { gsap } from "gsap";
   - Hover a billboard to see its description; click to open its link in a new tab.
 */
 
-
-
 const BILLBOARD_FOCUS_DISTANCE = 12; // how close the car should be to trigger billboard focus
 const BILLBOARD_FOCUS_LERP = 0.08; // smoothness of camera movement
 let currentFocusBillboard = null;
 let cameraTargetOffset = new THREE.Vector3(2, 3, -8); // default car follow offset
-
 
 // ----------------- Basic setup -----------------
 const scene = new THREE.Scene();
@@ -785,62 +782,16 @@ controls.addEventListener("end", () => {
 
 // A new, separate function for the camera to follow the car
 function followCamera() {
-  // Convert CANNON.Vec3 to THREE.Vector3
-  const carPos = new THREE.Vector3(
-    chassisBody.position.x,
-    chassisBody.position.y,
-    chassisBody.position.z
-  );
-
-  // Find nearest billboard within focus distance
-  let nearestBillboard = null;
-  let minDist = Infinity;
-  for (let obj of pickables) {
-    if (!obj.userData.isBillboard) continue; // only billboards
-    const dist = carPos.distanceTo(obj.position);
-    if (dist < minDist && dist < BILLBOARD_FOCUS_DISTANCE) {
-      minDist = dist;
-      nearestBillboard = obj;
-    }
+  if (!userIsRotating) {
+    const offset = new THREE.Vector3(2, 3, -8)
+      .applyQuaternion(chassisBody.quaternion)
+      .add(chassisBody.position);
+    camera.position.lerp(offset, 0.1);
+    controls.target.copy(chassisBody.position);
   }
-
-  if (nearestBillboard && !userIsRotating) {
-    currentFocusBillboard = nearestBillboard;
-
-    const billboardCenter = nearestBillboard.position.clone();
-    const carToBillboard = billboardCenter.clone().sub(carPos).normalize();
-
-    const desiredCamPos = carPos
-      .clone()
-      .add(carToBillboard.clone().multiplyScalar(-8)) // behind car
-      .add(new THREE.Vector3(0, 6, 0)); // height above car
-
-    camera.position.lerp(desiredCamPos, BILLBOARD_FOCUS_LERP);
-    controls.target.lerp(billboardCenter, BILLBOARD_FOCUS_LERP);
-
-  } else if (!userIsRotating) {
-    currentFocusBillboard = null;
-
-    const desiredCamPos = carPos.clone().add(
-      cameraTargetOffset.clone().applyQuaternion(
-        new THREE.Quaternion(
-          chassisBody.quaternion.x,
-          chassisBody.quaternion.y,
-          chassisBody.quaternion.z,
-          chassisBody.quaternion.w
-        )
-      )
-    );
-
-    camera.position.lerp(desiredCamPos, 0.1);
-    controls.target.lerp(carPos, 0.1);
-  }
-
-  // Always update controls
+  controls.target.copy(chassisBody.position);
   controls.update();
 }
-
-
 
 // ---------------- Input & audio ----------------
 const keys = {};
@@ -952,7 +903,7 @@ renderer.domElement.addEventListener("pointerleave", () => {
 
 // Works for both desktop click and mobile tap
 renderer.domElement.addEventListener("click", onPointerSelect);
-renderer.domElement.addEventListener("pointerup", onPointerSelect); 
+renderer.domElement.addEventListener("pointerup", onPointerSelect);
 
 // Set renderer output color
 if ("outputColorSpace" in renderer) {
@@ -960,9 +911,6 @@ if ("outputColorSpace" in renderer) {
 } else {
   renderer.outputEncoding = THREE.sRGBEncoding;
 }
-
-
-
 
 // ---------------- Place & orient vehicle on road ----------------
 function placeVehicleOnRoad(curve) {
@@ -1084,19 +1032,19 @@ function createButton(id, text, key) {
   button.style.userSelect = "none";
 
   // Press action
-  button.addEventListener("pointerdown", (e) => {
+  button.addEventListener("touchstart", (e) => {
     e.preventDefault();
     keys[key] = true;
   });
 
   // Release action
-  button.addEventListener("pointerup", (e) => {
+  button.addEventListener("touchcancel", (e) => {
     e.preventDefault();
     keys[key] = false;
   });
 
   // Release if finger slides away
-  button.addEventListener("pointerleave", (e) => {
+  button.addEventListener("touchend", (e) => {
     e.preventDefault();
     keys[key] = false;
   });
@@ -1105,14 +1053,15 @@ function createButton(id, text, key) {
 }
 
 // ----- Show only on mobile -----
-if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+if (
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  )
+) {
   mobileControls.style.display = "block";
 } else {
   mobileControls.style.display = "none";
 }
-
-
-
 
 // ---------------- Animation loop ----------------
 function animate() {
@@ -1123,7 +1072,7 @@ function animate() {
   const maxSteer = 0.25,
     maxForce = 900,
     brakeForce = 60,
-    maxSpeed = 10; // tuned a bit
+    maxSpeed = 14; // tuned a bit
   vehicle.setSteeringValue(0, 2);
   vehicle.setSteeringValue(0, 3);
 
