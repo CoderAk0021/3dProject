@@ -1,39 +1,22 @@
-// full-scene.js
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import * as CANNON from "cannon-es";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import {
-  CSS2DRenderer,
-  CSS2DObject,
-} from "three/addons/renderers/CSS2DRenderer.js";
+import {CSS2DRenderer,CSS2DObject,} from "three/addons/renderers/CSS2DRenderer.js";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
-import { gsap } from "gsap";
-/*
-  HOW TO USE
-  - Put your billboard images in //images/billboards (or adjust paths below).
-  - Edit BILLBOARD_DATA: each item has { img, href, desc }.
-  - Hover a billboard to see its description; click to open its link in a new tab.
-*/
-
-const BILLBOARD_FOCUS_DISTANCE = 12; // how close the car should be to trigger billboard focus
-const BILLBOARD_FOCUS_LERP = 0.08; // smoothness of camera movement
-let currentFocusBillboard = null;
-let cameraTargetOffset = new THREE.Vector3(2, 3, -8); // default car follow offset
 
 // ----------------- Basic setup -----------------
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-  60,
+  70,
   window.innerWidth / window.innerHeight,
   0.1,
   2000
 );
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-// If you're on newer three, prefer: renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -41,14 +24,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-const labelRenderer = new CSS2DRenderer();
-labelRenderer.setSize(window.innerWidth, window.innerHeight);
-labelRenderer.domElement.style.position = "absolute";
-labelRenderer.domElement.style.top = "0";
-labelRenderer.domElement.style.pointerEvents = "none";
-labelRenderer.domElement.style.fontFamily =
-  "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-document.body.appendChild(labelRenderer.domElement);
+
 
 // --------------- Environment & lights ----------------
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -101,48 +77,11 @@ groundBody.material = defaultMat;
 
 world.addBody(groundBody);
 
-// Load font
-
-// function create3DText(scene, textString, position = { x: 0, y: 0, z: 0 }) {
-//     const loader = new FontLoader();
-//     loader.load("/font.json", function (font) {
-//         const textGeometry = new TextGeometry(textString, {
-//             font: font,
-//             size: 2,       // Text size
-//             height: 0.5,   // Extrusion depth
-//             curveSegments: 12,
-//             bevelEnabled: true,
-//             bevelThickness: 0.03,
-//             bevelSize: 0.02,
-//             bevelOffset: 0,
-//             bevelSegments: 5
-//         });
-
-//         textGeometry.computeBoundingBox();
-//         textGeometry.center(); // Centers the text
-
-//         const textMaterial = new THREE.MeshStandardMaterial({
-//             color: 0xff6600,   // Orange like Bruno Simon's
-//             metalness: 0.5,
-//             roughness: 0.2
-//         });
-
-//          const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-//         textMesh.position.set(position.x, position.y, position.z);
-//         textMesh.scale.set(1,1,0.005)
-//         scene.add(textMesh);
-//     });
-// }
-
-// create3DText(scene, "WELCOME BATCH OF 2K25", { x: 0, y: 1, z: -10 });
-
-// ground visual
-// Load snow texture
 const textureLoader = new THREE.TextureLoader();
-const snowTexture = textureLoader.load("/textures/snow2.jpg"); // Path to your snow texture
+const snowTexture = textureLoader.load("/textures/snow2.jpg"); 
 snowTexture.wrapS = THREE.RepeatWrapping;
 snowTexture.wrapT = THREE.RepeatWrapping;
-snowTexture.repeat.set(50, 50); // Adjust tiling for large ground
+snowTexture.repeat.set(50, 50); 
 
 // Ground geometry & material
 const groundGeo = new THREE.PlaneGeometry(2000, 2000);
@@ -160,11 +99,9 @@ scene.add(ground);
 // ---------------- Textures ----------------
 const texLoader = new THREE.TextureLoader();
 
-// free seamless asphalt (swap to local if you prefer)
 const ASPHALT_URL =
   "https://cdn.jsdelivr.net/gh/ansimuz/3d-textures@master/asphalt/asphalt_diff_1k.jpg";
 const asphalt = texLoader.load(ASPHALT_URL, () => {
-  // If you're on newer three, prefer: asphalt.colorSpace = THREE.SRGBColorSpace;
   asphalt.colorSpace = THREE.SRGBColorSpace;
 });
 asphalt.wrapS = asphalt.wrapT = THREE.RepeatWrapping;
@@ -196,13 +133,8 @@ function createOvalCenterline(rx = 50, rz = 110, segments = 512) {
 
 function buildRoadStrip(centerCurve, width = 12, samples = 900) {
   const halfW = width / 2;
-  const pos = [],
-    norm = [],
-    uv = [],
-    idx = [];
-  const pts = [],
-    tans = [],
-    lengths = [];
+  const pos = [], norm = [], uv = [], idx = [];
+  const pts = [], tans = [], lengths = [];
   let accum = 0;
   let prev = centerCurve.getPointAt(0);
   pts.push(prev.clone());
@@ -222,9 +154,9 @@ function buildRoadStrip(centerCurve, width = 12, samples = 900) {
 
   const length = accum || 1;
 
+  // Road surface
   for (let i = 0; i < pts.length; i++) {
-    const p = pts[i],
-      tan = tans[i];
+    const p = pts[i], tan = tans[i];
     const up = new THREE.Vector3(0, 1, 0);
     const right = new THREE.Vector3().crossVectors(up, tan).normalize();
 
@@ -243,10 +175,7 @@ function buildRoadStrip(centerCurve, width = 12, samples = 900) {
   }
 
   for (let i = 0; i < pts.length - 1; i++) {
-    const a = i * 2,
-      b = a + 1,
-      c = a + 2,
-      d = a + 3;
+    const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
     idx.push(a, c, b);
     idx.push(c, d, b);
   }
@@ -265,14 +194,58 @@ function buildRoadStrip(centerCurve, width = 12, samples = 900) {
   });
   const repeatV = Math.max(1, Math.floor(length / 5));
   asphalt.repeat.set(6, repeatV);
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.receiveShadow = true;
-  scene.add(mesh);
-  return { mesh, centerCurve };
+  const roadMesh = new THREE.Mesh(geo, mat);
+  roadMesh.receiveShadow = true;
+  scene.add(roadMesh);
+
+  // Center solid strip
+  const stripMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.8
+  });
+
+  const stripWidth = 0.25;
+  const stripHeight = 0.02;
+  const stripGeom = new THREE.BufferGeometry();
+  const stripPos = [], stripNorm = [], stripIdx = [];
+
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], tan = tans[i];
+    const up = new THREE.Vector3(0, 1, 0);
+    const right = new THREE.Vector3().crossVectors(up, tan).normalize();
+
+    const leftS = p.clone().addScaledVector(right, -stripWidth / 2);
+    const rightS = p.clone().addScaledVector(right, stripWidth / 2);
+    leftS.y += stripHeight;
+    rightS.y += stripHeight;
+
+    stripPos.push(leftS.x, leftS.y, leftS.z);
+    stripPos.push(rightS.x, rightS.y, rightS.z);
+    stripNorm.push(0, 1, 0);
+    stripNorm.push(0, 1, 0);
+  }
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+    stripIdx.push(a, c, b);
+    stripIdx.push(c, d, b);
+  }
+
+  stripGeom.setAttribute("position", new THREE.Float32BufferAttribute(stripPos, 3));
+  stripGeom.setAttribute("normal", new THREE.Float32BufferAttribute(stripNorm, 3));
+  stripGeom.setIndex(stripIdx);
+  const stripMesh = new THREE.Mesh(stripGeom, stripMat);
+  stripMesh.receiveShadow = false;
+  scene.add(stripMesh);
+
+  return { mesh: roadMesh, centerCurve };
 }
 
+
+
 const roadCurve = createOvalCenterline(55, 120, 512);
-const { mesh: roadMesh } = buildRoadStrip(roadCurve, 12, 900);
+ buildRoadStrip(roadCurve, 22, 900);
 
 // ---------------- obstacles: trees & rocks with collisions ----------------
 const treeGroup = new THREE.Group();
@@ -344,43 +317,68 @@ function getSidePosition(curve, t, lateral, side = 1) {
   return { pos, center: p, tangent: tan, right };
 }
 
-// place spread-out trees (minimum spacing)
-function placeTrees(curve, count = 36, minDistance = 7.5) {
-  const placed = [];
-  let tries = 0;
-  while (placed.length < count && tries < count * 40) {
-    tries++;
-    const t = Math.random();
-    const side = Math.random() > 0.5 ? 1 : -1;
-    const lateral = 6 + Math.random() * 8;
-    const { pos } = getSidePosition(curve, t, lateral, side);
-    pos.y = 0;
-    let ok = true;
-    for (const other of placed) {
-      if (pos.distanceTo(other.position) < minDistance) {
-        ok = false;
-        break;
-      }
-    }
-    if (!ok) continue;
-    const tree = makeTreeMesh();
-    tree.scale.setScalar(0.9 + Math.random() * 1.5);
-    tree.position.copy(pos);
-    tree.rotation.y = Math.random() * Math.PI * 2;
-    tree.updateMatrixWorld(true);
-    treeGroup.add(tree);
-    placed.push(tree);
-    treePositions.push(tree.position.clone());
+const billboardPositions = [];
 
-    // physics approx using bounding box
-    const bbox = new THREE.Box3().setFromObject(tree);
-    const size = new THREE.Vector3();
-    bbox.getSize(size);
-    const center = new THREE.Vector3();
-    bbox.getCenter(center);
-    addStaticBox(center, size);
+function placeTrees(curve, count = 18, minDistToObjects = 10) {
+  for (let i = 0; i < count; i++) {
+    let tries = 0;
+    let placed = false;
+
+    while (!placed && tries < 30) {
+      tries++;
+
+      // Pick random spot along the curve
+      const t = Math.random() * 0.95 + 0.02;
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const { pos } = getSidePosition(curve, t, 15 + Math.random() * 8, side);
+      pos.y = 0.05;
+
+      // Check distance from billboards
+      let tooClose = false;
+      for (const bp of billboardPositions) {
+        if (pos.distanceTo(bp) < minDistToObjects) {
+          tooClose = true;
+          break;
+        }
+      }
+      if (tooClose) continue;
+
+      // Check distance from already placed trees
+      for (const tp of treePositions) {
+        if (pos.distanceTo(tp) < minDistToObjects) {
+          tooClose = true;
+          break;
+        }
+      }
+      if (tooClose) continue;
+
+      // Place tree
+      const tree = makeTreeMesh();
+      tree.position.copy(pos);
+      tree.scale.setScalar(1 + Math.random() * 1.0);
+      tree.rotation.y = Math.random() * Math.PI * 2;
+      scene.add(tree);
+
+      // Save tree position
+      treePositions.push(tree.position.clone());
+
+      // Physics
+      tree.updateMatrixWorld(true);
+      const bbox = new THREE.Box3().setFromObject(tree);
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+      const center = new THREE.Vector3();
+      bbox.getCenter(center);
+      addStaticBox(center, size);
+
+      placed = true;
+    }
   }
 }
+
+
+
+
 placeTrees(roadCurve, 36, 7.5);
 
 // place some sparse rocks
@@ -388,7 +386,7 @@ function placeRocks(curve, count = 18) {
   for (let i = 0; i < count; i++) {
     const t = Math.random() * 0.95 + 0.02;
     const side = Math.random() > 0.5 ? 1 : -1;
-    const { pos } = getSidePosition(curve, t, 6 + Math.random() * 8, side);
+    const { pos } = getSidePosition(curve, t, 15 + Math.random() * 8, side);
     const rock = makeRockMesh();
     rock.position.copy(pos);
     rock.position.y = 0.05;
@@ -409,34 +407,34 @@ function placeRocks(curve, count = 18) {
     );
   }
 }
-placeRocks(roadCurve, 18);
+placeRocks(roadCurve, 28);
 
 // ---------------- Billboard data (edit these!) ----------------
 const BILLBOARD_DATA = [
   {
     img: "/images/Acad_Building.jpg",
-    href: "/pages/academic/index.html",
-    desc: "Academic Building",
+    href: "https://aadarshagarwal1.github.io/experiences/",
+    desc: "ACADEMIC",
   },
   {
     img: "/images/cafe6.jpeg",
     href: "/pages/cafeteria/index.html",
-    desc: "Canteen",
+    desc: "CANTEEN",
   },
   {
     img: "/images/cafe1.jpg",
     href: "/pages/nescafe/index.html",
-    desc: "Nescafe",
+    desc: "NESCAFE",
   },
   {
     img: "/images/lib2.jpg",
     href: "/pages/centralLibrary/index.html",
-    desc: "Central Library",
+    desc: "LIBRARY",
   },
   {
     img: "/images/tiger.jpg",
     href: "/pages/tigerRoad/index.html",
-    desc: "Tiger Road",
+    desc: "TIGER ROAD",
   },
 ];
 
@@ -444,30 +442,75 @@ const BILLBOARD_DATA = [
 const gltfLoader = new GLTFLoader();
 const pickables = []; // the front poster planes for raycasting
 
-function makeBillboardLabel(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  div.style.padding = "6px 10px";
-  div.style.fontSize = "12px";
-  div.style.borderRadius = "8px";
-  div.style.background = "rgba(0,0,0,0.75)";
-  div.style.color = "#fff";
-  div.style.whiteSpace = "nowrap";
-  div.style.transform = "translateY(-8px)";
-  div.style.backdropFilter = "blur(2px)";
-  const label = new CSS2DObject(div);
-  label.visible = false;
-  return label;
+function createBanner(position, mainText, options = {}) {
+  const width = options.width || 15;
+  const height = options.height || 4;
+  const poleHeight = options.poleHeight || 6;
+  const secondaryText = options.secondaryText || "ISTE"; 
+
+  const group = new THREE.Group();
+
+  // ---- Poles ----
+  const poleGeo = new THREE.CylinderGeometry(0.2, 0.2, poleHeight, 12);
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+  const leftPole = new THREE.Mesh(poleGeo, poleMat);
+  const rightPole = leftPole.clone();
+  leftPole.position.set(-width / 2, poleHeight / 2, 0);
+  rightPole.position.set(width / 2, poleHeight / 2, 0);
+  group.add(leftPole, rightPole);
+
+  // ---- Banner plane ----
+  const bannerGeo = new THREE.BoxGeometry(width, height, 0.5);
+  const bannerMat = new THREE.MeshStandardMaterial({ color: 0xff6600, metalness: 0.1, roughness: 0.8 });
+  const bannerPlane = new THREE.Mesh(bannerGeo, bannerMat);
+  bannerPlane.position.set(0, poleHeight - height / 2, 0);
+  group.add(bannerPlane);
+
+  // ---- Main Text ----
+  const loader = new FontLoader();
+  loader.load("/fonts/font.json", function (font) {
+    const textGeo = new TextGeometry(mainText, {
+      font: font,
+      size: 1.2,
+      height: 0.3,
+      bevelEnabled: true,
+      bevelThickness: 0.03,
+      bevelSize: 0.02,
+      bevelSegments: 2,
+    });
+    textGeo.center();
+    const textMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const textMesh = new THREE.Mesh(textGeo, textMat);
+    textMesh.scale.set(1,1,0.002);
+    textMesh.rotation.set(0,-Math.PI,0);
+    textMesh.position.set(0, poleHeight -0.5- height / 2, -0.5);
+    group.add(textMesh);
+
+    // ---- Secondary Text (smaller) ----
+    const secGeo = new TextGeometry(secondaryText, {
+      font: font,
+      size: 0.8,
+      height: 0.2,
+      bevelEnabled: true,
+      bevelThickness: 0.02,
+      bevelSize: 0.01,
+      bevelSegments: 2,
+    });
+    secGeo.center();
+    const secTextMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+    const secMesh = new THREE.Mesh(secGeo, secTextMat);
+    secMesh.position.set(0, poleHeight - height / 2 + 1.2, -0.3); // slightly above main text
+    secMesh.scale.set(1,1,0.002);
+    secMesh.rotation.set(0,-Math.PI,0);
+    group.add(secMesh);
+  });
+
+  group.position.copy(position);
+  scene.add(group);
+
+  return group;
 }
 
-/**
- * Simon-Bruno style billboard group:
- *  - steel post + simple frame
- *  - double-sided poster plane with your texture
- *  - faces the road center (yaw only)
- *  - clickable (link), hover label (CSS2D)
- *  - static Cannon collision box
- */
 function createBillboard(position, lookAtPoint, options) {
   const {
     imageURL,
@@ -480,22 +523,20 @@ function createBillboard(position, lookAtPoint, options) {
 
   const group = new THREE.Group();
 
-  // Post
+  // ----- Posts -----
   const postGeo = new THREE.CylinderGeometry(0.4, 0.4, postHeight, 12);
   const postMat = new THREE.MeshBasicMaterial({ color: 0x555555 });
   const post1 = new THREE.Mesh(postGeo, postMat);
   post1.castShadow = true;
   post1.receiveShadow = true;
   post1.position.set(-width / 2, postHeight / 2, 0);
-
   const post2 = new THREE.Mesh(postGeo, postMat);
   post2.castShadow = true;
   post2.receiveShadow = true;
   post2.position.set(width / 2, postHeight / 2, 0);
-  group.add(post1);
-  group.add(post2);
+  group.add(post1, post2);
 
-  // Frame (thin box behind the poster)
+  // ----- Frame -----
   const frameDepth = 1.5;
   const frameGeo = new THREE.BoxGeometry(width + 0.3, height + 0.3, frameDepth);
   const frameMat = new THREE.MeshStandardMaterial({
@@ -509,29 +550,19 @@ function createBillboard(position, lookAtPoint, options) {
   frame.position.set(0, postHeight + height / 2, 0);
   group.add(frame);
 
-  // Poster plane (front) – pickable
+  // ----- Poster planes -----
   const posterGeo = new THREE.PlaneGeometry(width, height);
-  const tex = texLoader.load(
-    imageURL,
-    (t) => {
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = 8;
-    },
-    undefined,
-    () => console.warn("Failed to load billboard image:", imageURL)
-  );
-  const posterMatFront = new THREE.MeshStandardMaterial({
+  const tex = texLoader.load(imageURL);
+  const posterMatFront = new THREE.MeshBasicMaterial({
     map: tex,
-    roughness: 0.8,
-    metalness: 0.0,
     side: THREE.FrontSide,
   });
   const posterFront = new THREE.Mesh(posterGeo, posterMatFront);
+  posterFront.receiveShadow = false;
   posterFront.castShadow = true;
   posterFront.position.set(0, postHeight + height / 2, frameDepth * 0.51);
   group.add(posterFront);
 
-  // Poster plane (back) – same image for both sides
   const posterMatBack = new THREE.MeshStandardMaterial({
     map: tex,
     roughness: 0.8,
@@ -539,29 +570,49 @@ function createBillboard(position, lookAtPoint, options) {
     side: THREE.BackSide,
   });
   const posterBack = new THREE.Mesh(posterGeo, posterMatBack);
-  posterBack.castShadow = false;
   posterBack.position.set(0, postHeight + height / 2, -frameDepth * 0.51);
   posterBack.rotateY(Math.PI);
   group.add(posterBack);
 
-  // Rotate to face road center (yaw only)
-  const yaw = Math.atan2(
-    lookAtPoint.x - position.x,
-    lookAtPoint.z - position.z
-  );
+  // ----- Small name board -----
+  if (description) {
+    const boardWidth = width * 0.5;
+    const boardHeight = 0.5;
+    const boardGeo = new THREE.BoxGeometry(boardWidth, boardHeight, 0.2);
+    const boardMat = new THREE.MeshStandardMaterial({
+      color: 0x000000,
+      metalness: 0.3,
+      roughness: 0.7,
+    });
+    const nameBoard = new THREE.Mesh(boardGeo, boardMat);
+    nameBoard.position.set(0, postHeight + height + boardHeight / 2 + 0.2, 0);
+    group.add(nameBoard);
+
+    const loader = new FontLoader();
+    loader.load("/fonts/font.json", function (font) {
+      const textGeo = new TextGeometry(description, {
+        font: font,
+        size: 1.5,
+        height: 0.05,
+      });
+      textGeo.center();
+      const textMat = new THREE.MeshStandardMaterial({ color: 0xfc5e03 });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.scale.set(1, 1, 0.02);
+      textMesh.position.set(0.5, 1, 0.11);
+      group.add(textMesh);
+    });
+  }
+
+  // ----- Rotate to face road center (yaw only) -----
+  const yaw = Math.atan2(lookAtPoint.x - position.x, lookAtPoint.z - position.z);
   group.position.set(position.x, 0, position.z);
   group.rotation.y = yaw;
 
-  // Hover label (CSS2D)
-  const label = makeBillboardLabel(description || "");
-  label.position.set(0, postHeight + height + 0.6, 0);
-  group.add(label);
-
-  // User data for raycast interactions
+  // ----- User data for picking -----
   posterFront.userData.href = link;
-  posterFront.userData.label = label;
 
-  // Physics: static box roughly covering the billboard
+  // ----- Physics -----
   const bbox = new THREE.Box3().setFromObject(group);
   const size = new THREE.Vector3();
   bbox.getSize(size);
@@ -569,13 +620,16 @@ function createBillboard(position, lookAtPoint, options) {
   bbox.getCenter(center);
   addStaticBox(center, size);
 
-  scene.add(group);
+  // Add billboard position for tree avoidance
+  billboardPositions.push(position.clone());
 
-  // add pickable
+  scene.add(group);
   pickables.push(posterFront);
 
   return group;
 }
+
+
 
 // Helper to get a clear roadside placement (avoids trees & other billboards)
 function getClearRoadsideSpot(
@@ -587,17 +641,25 @@ function getClearRoadsideSpot(
   minDistToBillboards,
   placedPositions
 ) {
-  // Try increasing lateral offset outward until space is clear
   for (let step = 0; step < 8; step++) {
     const lateral = baseLateral + step * 2.0;
     const { pos, center } = getSidePosition(curve, tGuess, lateral, side);
     pos.y = 0;
 
-    // Check distance to trees
+    // Billboard forward direction
+    const forward = center.clone().sub(pos).normalize();
+    const forwardCheckDist = 8; // distance in front to check for trees
+
     let ok = true;
+
+    // Check trees not in front
     for (const tp of treePositions) {
-      if (pos.distanceTo(tp) < minDistToTrees) {
-        ok = false;
+      const toTree = tp.clone().sub(pos);
+      const proj = toTree.dot(forward); // projection along forward
+      const lateralDist = new THREE.Vector3(toTree.x, 0, toTree.z)
+        .length(); // approximate lateral distance
+      if (proj > 0 && proj < forwardCheckDist && lateralDist < minDistToTrees) {
+        ok = false; // tree in front
         break;
       }
     }
@@ -614,24 +676,22 @@ function getClearRoadsideSpot(
 
     return { pos, center };
   }
+
   return null;
 }
+
 
 // Place billboards using BILLBOARD_DATA
 function placeBillboardsFromData(curve, data) {
   const count = data.length;
   const placedPositions = [];
-  const roadHalfWidth = 6; // from your buildRoadStrip(12) width/2
+  const roadHalfWidth = 6; 
 
   for (let i = 0; i < count; i++) {
-    // spread them somewhat evenly and jitter a bit
-    const tBase = (i / count) % 1;
-    const t = (tBase * 0.94 + 0.03 + Math.random() * 0.02) % 1;
-
-    // alternate sides, keep them just outside the road edge
+    // evenly spaced along the curve
+    const t = (i + 0.5) / count; // 
     const side = i % 2 === 0 ? 1 : -1;
     const baseLateral = roadHalfWidth + 6; // road edge + margin
-
     // find a clear spot near this t
     const spot = getClearRoadsideSpot(
       curve,
@@ -649,7 +709,7 @@ function placeBillboardsFromData(curve, data) {
 
     const item = data[i];
 
-    // size variety
+    // size variety (optional)
     const w = 7 + Math.random() * 2.5;
     const h = 3.5 + Math.random() * 1.2;
 
@@ -840,11 +900,8 @@ let isBraking = false;
 // ---------------- Raycasting: click/hover for billboards (Desktop + Mobile) ----------------
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-let hoveredPoster = null;
 
-function setCursorPointer(on) {
-  renderer.domElement.style.cursor = on ? "pointer" : "";
-}
+
 
 function updateRaycasterFromEvent(event) {
   const rect = renderer.domElement.getBoundingClientRect();
@@ -863,25 +920,6 @@ function updateRaycasterFromEvent(event) {
   mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 }
-
-function onPointerMove(event) {
-  updateRaycasterFromEvent(event);
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(pickables, false);
-  const newHover = hits.length ? hits[0].object : null;
-
-  if (hoveredPoster && hoveredPoster !== newHover) {
-    if (hoveredPoster.userData?.label) {
-      hoveredPoster.userData.label.visible = false;
-    }
-  }
-  hoveredPoster = newHover;
-  if (hoveredPoster && hoveredPoster.userData?.label) {
-    hoveredPoster.userData.label.visible = true;
-  }
-  setCursorPointer(!!hoveredPoster);
-}
-
 function onPointerSelect(event) {
   updateRaycasterFromEvent(event);
   raycaster.setFromCamera(mouse, camera);
@@ -891,19 +929,8 @@ function onPointerSelect(event) {
     if (href) window.open(href, "_blank");
   }
 }
-
-renderer.domElement.addEventListener("pointermove", onPointerMove);
-renderer.domElement.addEventListener("pointerleave", () => {
-  if (hoveredPoster && hoveredPoster.userData?.label) {
-    hoveredPoster.userData.label.visible = false;
-  }
-  hoveredPoster = null;
-  setCursorPointer(false);
-});
-
 // Works for both desktop click and mobile tap
 renderer.domElement.addEventListener("click", onPointerSelect);
-renderer.domElement.addEventListener("pointerup", onPointerSelect);
 
 // Set renderer output color
 if ("outputColorSpace" in renderer) {
@@ -923,43 +950,12 @@ function placeVehicleOnRoad(curve) {
   m.lookAt(start, lookAt, new THREE.Vector3(0, 1, 0));
   const q = new THREE.Quaternion().setFromRotationMatrix(m);
   chassisBody.quaternion.set(q.x, q.y, q.z, q.w);
-  const loader = new FontLoader();
-  loader.load("/fonts/font.json", function (font) {
-    const textGeometry = new TextGeometry("WELCOME BATCH OF 2025", {
-      font: font,
-      size: 2, // Text size
-      height: 0.5, // Extrusion depth
-      curveSegments: 12,
-      bevelEnabled: true,
-      bevelThickness: 0.03,
-      bevelSize: 0.02,
-      bevelOffset: 0,
-      bevelSegments: 5,
-    });
-
-    textGeometry.computeBoundingBox();
-    textGeometry.center(); // Centers the text
-
-    const textMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff6600, // Orange like Bruno Simon's
-      metalness: 0.0,
-      roughness: 0.9,
-    });
-
-    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-    textMesh.scale.set(1, 1, 0.005);
-    textMesh.castShadow = true;
-    textMesh.rotation.y = -Math.PI; // Rotate to face camera
-    textMesh.position.set(start.x, 20, start.z + 20);
-    scene.add(textMesh);
-    gsap.to(textMesh.position, {
-      y: 1, // final resting height
-      duration: 1.2, // time to fall
-      ease: "bounce.out", // GSAP's bounce easing
-      delay: 0.5, // slight delay before falling
-    });
-  });
+  const bannerPosition = new THREE.Vector3(start.x, 0, start.z+11);
+  createBanner(bannerPosition, "WELCOME BATCH OF 2025", {
+  width: 25,
+  height: 4,
+  poleHeight: 7
+});
 }
 
 placeVehicleOnRoad(roadCurve);
@@ -1149,6 +1145,5 @@ function animate() {
   followCamera();
 
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
 }
 animate();
