@@ -18,6 +18,14 @@ import { gsap } from "gsap";
   - Hover a billboard to see its description; click to open its link in a new tab.
 */
 
+
+
+const BILLBOARD_FOCUS_DISTANCE = 12; // how close the car should be to trigger billboard focus
+const BILLBOARD_FOCUS_LERP = 0.08; // smoothness of camera movement
+let currentFocusBillboard = null;
+let cameraTargetOffset = new THREE.Vector3(2, 3, -8); // default car follow offset
+
+
 // ----------------- Basic setup -----------------
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -409,34 +417,29 @@ placeRocks(roadCurve, 18);
 // ---------------- Billboard data (edit these!) ----------------
 const BILLBOARD_DATA = [
   {
-    img: "/images/billboard_0.jpg",
-    href: "https://example.com/one",
+    img: "/images/Acad_Building.jpg",
+    href: "/pages/academic/index.html",
     desc: "Academic Building",
   },
   {
-    img: "/images/anime-school-building-illustration.jpg",
-    href: "https://example.com/two",
+    img: "/images/cafe6.jpeg",
+    href: "/pages/cafeteria/index.html",
     desc: "Canteen",
   },
   {
-    img: "/images/billboard_0.jpg",
-    href: "https://example.com/three",
+    img: "/images/cafe1.jpg",
+    href: "/pages/nescafe/index.html",
     desc: "Nescafe",
   },
   {
-    img: "/images/billboard_0.jpg",
-    href: "https://example.com/four",
-    desc: "Deshpande Auditorium",
-  },
-  {
-    img: "/images/billboard_0.jpg",
-    href: "https://example.com/five",
+    img: "/images/lib2.jpg",
+    href: "/pages/centralLibrary/index.html",
     desc: "Central Library",
   },
   {
-    img: "/images/billboard_0.jpg",
-    href: "https://example.com/six",
-    desc: "College Ground",
+    img: "/images/tiger.jpg",
+    href: "/pages/tigerRoad/index.html",
+    desc: "Tiger Road",
   },
 ];
 
@@ -782,22 +785,62 @@ controls.addEventListener("end", () => {
 
 // A new, separate function for the camera to follow the car
 function followCamera() {
-  // Only update the camera's position to follow the car
-  // if the user is NOT actively rotating it.
-  if (!userIsRotating) {
-    const offset = new THREE.Vector3(2, 3, -8)
-      .applyQuaternion(chassisBody.quaternion)
-      .add(chassisBody.position);
+  // Convert CANNON.Vec3 to THREE.Vector3
+  const carPos = new THREE.Vector3(
+    chassisBody.position.x,
+    chassisBody.position.y,
+    chassisBody.position.z
+  );
 
-    camera.position.lerp(offset, 0.1);
-    controls.target.copy(chassisBody.position);
+  // Find nearest billboard within focus distance
+  let nearestBillboard = null;
+  let minDist = Infinity;
+  for (let obj of pickables) {
+    if (!obj.userData.isBillboard) continue; // only billboards
+    const dist = carPos.distanceTo(obj.position);
+    if (dist < minDist && dist < BILLBOARD_FOCUS_DISTANCE) {
+      minDist = dist;
+      nearestBillboard = obj;
+    }
   }
 
-  // Always update controls, even when the user is rotating,
-  // so that damping and other behaviors work correctly.
-  controls.target.copy(chassisBody.position);
+  if (nearestBillboard && !userIsRotating) {
+    currentFocusBillboard = nearestBillboard;
+
+    const billboardCenter = nearestBillboard.position.clone();
+    const carToBillboard = billboardCenter.clone().sub(carPos).normalize();
+
+    const desiredCamPos = carPos
+      .clone()
+      .add(carToBillboard.clone().multiplyScalar(-8)) // behind car
+      .add(new THREE.Vector3(0, 6, 0)); // height above car
+
+    camera.position.lerp(desiredCamPos, BILLBOARD_FOCUS_LERP);
+    controls.target.lerp(billboardCenter, BILLBOARD_FOCUS_LERP);
+
+  } else if (!userIsRotating) {
+    currentFocusBillboard = null;
+
+    const desiredCamPos = carPos.clone().add(
+      cameraTargetOffset.clone().applyQuaternion(
+        new THREE.Quaternion(
+          chassisBody.quaternion.x,
+          chassisBody.quaternion.y,
+          chassisBody.quaternion.z,
+          chassisBody.quaternion.w
+        )
+      )
+    );
+
+    camera.position.lerp(desiredCamPos, 0.1);
+    controls.target.lerp(carPos, 0.1);
+  }
+
+  // Always update controls
   controls.update();
 }
+
+
 
 // ---------------- Input & audio ----------------
 const keys = {};
@@ -1080,7 +1123,7 @@ function animate() {
   const maxSteer = 0.25,
     maxForce = 900,
     brakeForce = 60,
-    maxSpeed = 16; // tuned a bit
+    maxSpeed = 10; // tuned a bit
   vehicle.setSteeringValue(0, 2);
   vehicle.setSteeringValue(0, 3);
 
