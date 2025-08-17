@@ -468,7 +468,7 @@ function createBanner(position, mainText, options = {}) {
 
   // ---- Main Text ----
   const loader = new FontLoader();
-  loader.load("/fonts/font.json", function (font) {
+  loader.load("/fonts/Roboto.json", function (font) {
     const textGeo = new TextGeometry(mainText, {
       font: font,
       size: 1.2,
@@ -745,7 +745,7 @@ world.addContactMaterial(contactMaterial);
 
 let chassisMesh = null;
 gltfLoader.load(
-  "/models/cybertruck.glb",
+  "/models/vehicle2.glb",
   (gltf) => {
     chassisMesh = gltf.scene;
     chassisMesh.traverse((c) => {
