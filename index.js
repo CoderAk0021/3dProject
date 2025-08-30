@@ -417,7 +417,7 @@ const BILLBOARD_DATA = [
     desc: "ACADEMIC",
   },
   {
-    img: "/images/cafe6.jpeg",
+    img: "/images/canteen.jpg",
     href: "/pages/cafeteria/index.html",
     desc: "CANTEEN",
   },
@@ -427,12 +427,12 @@ const BILLBOARD_DATA = [
     desc: "NESCAFE",
   },
   {
-    img: "/images/lib2.jpg",
+    img: "/images/central-lib.jpg",
     href: "/pages/centralLibrary/index.html",
     desc: "LIBRARY",
   },
   {
-    img: "/images/tiger.jpg",
+    img: "/images/tiger-road.jpg",
     href: "/pages/tigerRoad/index.html",
     desc: "TIGER ROAD",
   },
@@ -446,7 +446,7 @@ function createBanner(position, mainText, options = {}) {
   const width = options.width || 15;
   const height = options.height || 4;
   const poleHeight = options.poleHeight || 6;
-  const secondaryText = options.secondaryText || "ISTE"; 
+  const secondaryText = options.secondaryText || "ISTE BITS"; 
 
   const group = new THREE.Group();
 
@@ -511,6 +511,7 @@ function createBanner(position, mainText, options = {}) {
   return group;
 }
 
+// ---------- Create Billboard ----------
 function createBillboard(position, lookAtPoint, options) {
   const {
     imageURL,
@@ -519,6 +520,8 @@ function createBillboard(position, lookAtPoint, options) {
     height = 4.5,
     postHeight = 3.5,
     link = "#",
+    inwardAngle = THREE.MathUtils.degToRad(20), // default inward tilt
+    side = 1, // 1 = right side, -1 = left side
   } = options;
 
   const group = new THREE.Group();
@@ -604,12 +607,15 @@ function createBillboard(position, lookAtPoint, options) {
     });
   }
 
-  // ----- Rotate to face road center (yaw only) -----
+  // ----- Rotate to face road center -----
   const yaw = Math.atan2(lookAtPoint.x - position.x, lookAtPoint.z - position.z);
   group.position.set(position.x, 0, position.z);
   group.rotation.y = yaw;
 
-  // ----- User data for picking -----
+  // Apply inward tilt depending on roadside
+  group.rotation.y -= (side * 0.9);
+
+  // ----- User data -----
   posterFront.userData.href = link;
 
   // ----- Physics -----
@@ -620,7 +626,6 @@ function createBillboard(position, lookAtPoint, options) {
   bbox.getCenter(center);
   addStaticBox(center, size);
 
-  // Add billboard position for tree avoidance
   billboardPositions.push(position.clone());
 
   scene.add(group);
@@ -688,18 +693,17 @@ function placeBillboardsFromData(curve, data) {
   const roadHalfWidth = 6; 
 
   for (let i = 0; i < count; i++) {
-    // evenly spaced along the curve
-    const t = (i + 0.5) / count; // 
-    const side = i % 2 === 0 ? 1 : -1;
-    const baseLateral = roadHalfWidth + 6; // road edge + margin
-    // find a clear spot near this t
+    const t = (i + 0.5) / count; 
+    const side = i % 2 === 0 ? 1 : -1; // alternate sides
+    const baseLateral = roadHalfWidth + 14; 
+
     const spot = getClearRoadsideSpot(
       curve,
       t,
       side,
       baseLateral,
-      /*trees*/ 6.5,
-      /*billboards*/ 10,
+      6.5,
+      10,
       placedPositions
     );
     if (!spot) continue;
@@ -709,21 +713,27 @@ function placeBillboardsFromData(curve, data) {
 
     const item = data[i];
 
-    // size variety (optional)
     const w = 7 + Math.random() * 2.5;
     const h = 3.5 + Math.random() * 1.2;
 
-    createBillboard(pos, center, {
+    // Road tangent for orientation
+    const tangent = curve.getTangentAt(t).clone().normalize();
+    const lookTarget = pos.clone().add(tangent.multiplyScalar(20));
+
+    createBillboard(pos, lookTarget, {
       imageURL: item.img,
       description: item.desc,
       width: w + 8,
       height: h + 3,
       postHeight: 3.2 + Math.random() * 0.6,
       link: item.href,
+      side: side, // pass roadside info
+      inwardAngle: THREE.MathUtils.degToRad(15 + Math.random() * 10), // 15–25° inward tilt
     });
   }
 }
 placeBillboardsFromData(roadCurve, BILLBOARD_DATA);
+
 
 // ---------------- Vehicle (chassis + wheels + collision) ----------------
 const chassisBody = new CANNON.Body({ mass: 150 });
@@ -951,7 +961,7 @@ function placeVehicleOnRoad(curve) {
   const q = new THREE.Quaternion().setFromRotationMatrix(m);
   chassisBody.quaternion.set(q.x, q.y, q.z, q.w);
   const bannerPosition = new THREE.Vector3(start.x, 0, start.z+11);
-  createBanner(bannerPosition, "WELCOME BATCH OF 2025", {
+  createBanner(bannerPosition, "WELCOMES BATCH OF 2025", {
   width: 25,
   height: 4,
   poleHeight: 7
